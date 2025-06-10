@@ -28,6 +28,8 @@ const iconPath = (): string => {
 
 const winUnreadTrayIconPath = (): string => appIcon + "unread.ico";
 
+const macUnreadTrayIconPath = (): string => appIcon + "macOSTemplateUnread.png";
+
 let unread = 0;
 
 const trayIconSize = (): number => {
@@ -122,6 +124,10 @@ const renderNativeImage = function (argument: number): NativeImage {
     return nativeImage.createFromPath(winUnreadTrayIconPath());
   }
 
+  if (process.platform === "darwin") {
+    return nativeImage.createFromPath(macUnreadTrayIconPath());
+  }
+
   const canvas = renderCanvas(argument);
   const pngData = nativeImage
     .createFromDataURL(canvas.toDataURL("image/png"))
@@ -178,6 +184,10 @@ const createTray = function (): void {
   }
 };
 
+const shouldShowTrayIcon = function (): boolean {
+  return process.platform == "darwin" || process.platform == "win32" || process.platform == "linux";
+};
+
 export function initializeTray(serverManagerView: ServerManagerView) {
   ipcRenderer.on("destroytray", () => {
     if (!tray) {
@@ -198,7 +208,7 @@ export function initializeTray(serverManagerView: ServerManagerView) {
     }
 
     // We don't want to create tray from unread messages on macOS since it already has dock badges.
-    if (process.platform === "linux" || process.platform === "win32") {
+    if (shouldShowTrayIcon()) {
       if (argument === 0) {
         unread = argument;
         tray.setImage(iconPath());
@@ -225,7 +235,7 @@ export function initializeTray(serverManagerView: ServerManagerView) {
     } else {
       state = true;
       createTray();
-      if (process.platform === "linux" || process.platform === "win32") {
+      if (shouldShowTrayIcon()) {
         const image = renderNativeImage(unread);
         tray!.setImage(image);
         tray!.setToolTip(`${unread} unread messages`);
